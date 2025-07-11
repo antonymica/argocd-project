@@ -1,0 +1,41 @@
+stages:
+  - start
+  - scan-snyk
+  - scan-trivy
+
+begin:
+  stage: start
+  script:
+    - echo "Pipeline begining ..."
+
+snyk-manifests:
+  stage: scan-snyk
+  image: ubuntu:22.04 
+  needs: ["begin"]
+  when: always
+  before_script:
+    - apt-get update && apt-get install -y curl npm
+    - npm install -g snyk
+    - snyk --version
+  script:
+    - if [ -n "$SNYK_TOKEN" ]; then
+        snyk auth $SNYK_TOKEN;
+        snyk iac test manifests/ --severity-threshold=high || echo "Snyk scan failed for manifests";
+      else
+        echo "SNYK_TOKEN environment variable is not set. Skipping Snyk scan.";
+      fi
+
+
+trivy-manifests:
+  stage: scan-trivy
+  image: 
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  needs: ["begin"]
+  before_script:
+    - mkdir -p manifests-trivy-reports
+  script:
+    - echo "Scan begining ..."
+    - trivy fs .
+    - echo "Scan terminating..."
+  when: always

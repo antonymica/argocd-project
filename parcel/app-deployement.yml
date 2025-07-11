@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gestion-colis-app
+  namespace: parcel-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gestion-colis
+  template:
+    metadata:
+      labels:
+        app: gestion-colis
+    spec:
+      containers:
+        - name: gestion-colis
+          image: aanton0/parcel-delivery:prod
+          ports:
+            - containerPort: 5000
+          env:
+            - name: MONGO_URI
+              value: mongodb://mongo:27017/gestionColis
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gestion-colis-app
+  namespace: parcel-ns
+spec:
+  selector:
+    app: gestion-colis
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
